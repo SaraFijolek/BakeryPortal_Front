@@ -23,6 +23,9 @@ export default function Login() {
 
             if (result.access_token) {
                 localStorage.setItem("token", result.access_token);
+                if (result.userId) {
+                    localStorage.setItem("userId", result.userId);
+                }
                 navigate("/");
             }
         } catch {

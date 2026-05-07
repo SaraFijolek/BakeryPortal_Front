@@ -4,6 +4,7 @@ interface LoginResponse {
     access_token?: string;
     requires2FA?: boolean;
     isAdmin?: boolean;
+    userId?: string;
 }
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
