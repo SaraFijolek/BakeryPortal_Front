@@ -9,6 +9,9 @@ import ResetPassword from "./pages/ResetPassword.tsx";
 import ConfirmAccount from "./pages/ConfirmAccount.tsx";
 import UserProfile from "./pages/Userprofile.tsx";
 import Advertisement from "./pages/Advertisement.tsx";
+import Message from "./pages/Message.tsx";
+import Comments from "./pages/Comments.tsx";
+import AdminPanel from "./pages/AdminPanel.tsx";
 
 function App() {
 
@@ -25,6 +28,9 @@ function App() {
           <Route path="/confirm-account" element={<ConfirmAccount />} />
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/add-ad" element={<Advertisement/>} />
+          <Route path="/message" element={<Message/>}/>
+          <Route path="/comments" element={<Comments/>}/>
+          <Route path="/admin" element={<AdminPanel/>}/>
       </Routes>
 
   )

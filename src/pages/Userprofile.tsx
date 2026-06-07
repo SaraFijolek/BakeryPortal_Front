@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 interface UserDto {
@@ -41,6 +41,15 @@ export default function UserProfile() {
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [togglingStatus, setTogglingStatus] = useState(false);
 
+    // --- Usuwanie konta ---
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+
+    // --- Avatar upload ---
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const avatarInputRef = useRef<HTMLInputElement>(null);
+
     const navigate = useNavigate();
     const token = localStorage.getItem("token");
     const userId = localStorage.getItem("userId");
@@ -67,7 +76,6 @@ export default function UserProfile() {
             .catch(() => setAds([]));
     }, [token, userId, navigate]);
 
-
     const handleSave = async () => {
         if (!userId || !token) return;
         setSaving(true);
@@ -89,7 +97,6 @@ export default function UserProfile() {
                 throw new Error(body?.message ?? `Błąd ${res.status}`);
             }
 
-
             setUser((prev) => prev ? { ...prev, ...formData } : prev);
             setIsEditing(false);
             setSaveSuccess(true);
@@ -100,7 +107,6 @@ export default function UserProfile() {
             setSaving(false);
         }
     };
-
 
     const handleToggleStatus = async () => {
         if (!userId || !token || !user) return;
@@ -125,6 +131,64 @@ export default function UserProfile() {
         }
     };
 
+    // --- Usuwanie konta ---
+    const handleDeleteAccount = async () => {
+        if (!userId || !token) return;
+        setDeleting(true);
+
+        try {
+            const res = await fetch(`https://localhost:7183/api/Users/${userId}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (!res.ok) throw new Error(`Błąd ${res.status}`);
+
+            localStorage.removeItem("token");
+            localStorage.removeItem("userId");
+            navigate("/login");
+        } catch {
+            alert("Nie udało się usunąć konta. Spróbuj ponownie.");
+            setDeleting(false);
+            setShowDeleteModal(false);
+        }
+    };
+
+    // --- Avatar upload ---
+    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !userId || !token) return;
+
+        // Podgląd lokalny
+        const reader = new FileReader();
+        reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
+        reader.readAsDataURL(file);
+
+        setUploadingAvatar(true);
+        try {
+            const formDataUpload = new FormData();
+            formDataUpload.append("avatar", file);
+
+            const res = await fetch(`https://localhost:7183/api/Users/${userId}/avatar`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+                body: formDataUpload,
+            });
+
+            if (!res.ok) throw new Error(`Błąd ${res.status}`);
+            const data = await res.json();
+            // Zakładamy, że API zwraca { avatarUrl: "..." }
+            setUser((prev) => prev ? { ...prev, avatarUrl: data.avatarUrl ?? prev.avatarUrl } : prev);
+        } catch {
+            alert("Nie udało się przesłać zdjęcia profilowego.");
+            setAvatarPreview(null);
+        } finally {
+            setUploadingAvatar(false);
+            // Reset input, by móc ponownie wybrać ten sam plik
+            if (avatarInputRef.current) avatarInputRef.current.value = "";
+        }
+    };
+
     const handleLogout = () => {
         localStorage.removeItem("token");
         localStorage.removeItem("userId");
@@ -134,12 +198,13 @@ export default function UserProfile() {
     const getInitials = (name: string) =>
         name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
-
     const handleCancel = () => {
         if (user) setFormData({ name: user.name, email: user.email, phone: user.phone ?? "" });
         setSaveError(null);
         setIsEditing(false);
     };
+
+    const currentAvatar = avatarPreview ?? user?.avatarUrl;
 
     if (loading) return <div className="up-loading"><div className="up-spinner" /><p>Ładowanie profilu…</p></div>;
     if (error) return (
@@ -153,6 +218,36 @@ export default function UserProfile() {
 
     return (
         <div className="up-root">
+            {/* ── MODAL POTWIERDZENIA USUNIĘCIA ── */}
+            {showDeleteModal && (
+                <div className="up-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+                    <div className="up-modal">
+                        <div className="up-modal-icon">🗑️</div>
+                        <h2 id="delete-modal-title" className="up-modal-title">Usuń konto</h2>
+                        <p className="up-modal-desc">
+                            Czy na pewno chcesz usunąć swoje konto? Tej operacji <strong>nie można cofnąć</strong>.
+                            Wszystkie Twoje dane i ogłoszenia zostaną trwale usunięte.
+                        </p>
+                        <div className="up-modal-actions">
+                            <button
+                                className="up-btn up-btn--danger"
+                                onClick={handleDeleteAccount}
+                                disabled={deleting}
+                            >
+                                {deleting ? "Usuwanie…" : "Tak, usuń konto"}
+                            </button>
+                            <button
+                                className="up-btn up-btn--ghost"
+                                onClick={() => setShowDeleteModal(false)}
+                                disabled={deleting}
+                            >
+                                Nie, anuluj
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="up-card">
                 {/* Górny pasek */}
                 <div className="up-actions">
@@ -160,13 +255,39 @@ export default function UserProfile() {
                     <button className="up-btn up-btn--danger" onClick={handleLogout}>Wyloguj</button>
                 </div>
 
-                {/* Avatar */}
+                {/* Avatar z overlayem uploadu */}
                 <div className="up-avatar-wrapper">
-                    {user.avatarUrl
-                        ? <img src={user.avatarUrl} alt={`Zdjęcie profilowe ${user.name}`} className="up-avatar" />
+                    {currentAvatar
+                        ? <img src={currentAvatar} alt={`Zdjęcie profilowe ${user.name}`} className="up-avatar" />
                         : <div className="up-avatar up-avatar--initials">{getInitials(user.name)}</div>
                     }
                     <span className={`up-status-dot ${user.isActive ? "active" : "inactive"}`} />
+
+                    {/* Overlay „Dodaj zdjęcie" */}
+                    <button
+                        className="up-avatar-upload-overlay"
+                        onClick={() => avatarInputRef.current?.click()}
+                        disabled={uploadingAvatar}
+                        aria-label="Dodaj zdjęcie profilowe"
+                        title="Dodaj zdjęcie profilowe"
+                    >
+                        {uploadingAvatar ? (
+                            <span className="up-avatar-upload-spinner" />
+                        ) : (
+                            <>
+                                <span className="up-avatar-upload-icon">📷</span>
+                                <span className="up-avatar-upload-label">Dodaj zdjęcie</span>
+                            </>
+                        )}
+                    </button>
+
+                    <input
+                        ref={avatarInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        style={{ display: "none" }}
+                        onChange={handleAvatarChange}
+                    />
                 </div>
 
                 <h1 className="up-name">{user.name}</h1>
@@ -216,6 +337,13 @@ export default function UserProfile() {
                                 disabled={togglingStatus}
                             >
                                 {togglingStatus ? "…" : user.isActive ? "Dezaktywuj konto" : "Aktywuj konto"}
+                            </button>
+                            {/* Przycisk usunięcia konta */}
+                            <button
+                                className="up-btn up-btn--danger-outline"
+                                onClick={() => setShowDeleteModal(true)}
+                            >
+                                🗑 Usuń konto
                             </button>
                         </div>
                     </>

@@ -5,6 +5,7 @@ interface LoginResponse {
     requires2FA?: boolean;
     isAdmin?: boolean;
     userId?: string;
+    role: "Admin" | "User";
 }
 
 export async function login(email: string, password: string): Promise<LoginResponse> {

@@ -432,7 +432,7 @@ export default function AdsPage() {
        JSX
     ───────────────────────────────────────── */
     return (
-        <div className="ap-root">
+        <div className="ads-root">
 
             {/* ── Górny pasek ── */}
             <div className="ap-topbar">
@@ -779,6 +779,19 @@ export default function AdsPage() {
                                             {mediaCount > 0 && (
                                                 <span className="ap-media-count">{mediaCount}</span>
                                             )}
+                                        </button>
+                                        <button
+                                            className="ap-btn ap-btn--primary ap-btn--sm"
+                                            onClick={() => navigate(`/comments/`)}
+                                        >
+                                            💬 Komentarze
+                                        </button>
+
+                                        <button
+                                            className="ap-btn ap-btn--media ap-btn--sm"
+                                            onClick={() => navigate(`/message/`)}
+                                        >
+                                            ✉ Wiadomość
                                         </button>
                                     </div>
 
