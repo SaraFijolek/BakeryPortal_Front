@@ -7,11 +7,11 @@ import Login2FA from "./pages/Login2FA.tsx";
 import ForgotPassword from "./pages/ForgotPassword.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import ConfirmAccount from "./pages/ConfirmAccount.tsx";
-import UserProfile from "./pages/Userprofile.tsx";
 import Advertisement from "./pages/Advertisement.tsx";
 import Message from "./pages/Message.tsx";
 import Comments from "./pages/Comments.tsx";
 import AdminPanel from "./pages/AdminPanel.tsx";
+import UserProfile from "./pages/UserProfile.tsx";
 
 function App() {
 

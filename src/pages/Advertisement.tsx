@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-/* ─────────────────────────────────────────────
-   DTOs
-───────────────────────────────────────────── */
 interface SubcategoryDto {
     subcategoryId: number;
     name: string;
