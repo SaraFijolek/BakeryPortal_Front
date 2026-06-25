@@ -790,6 +790,13 @@ export default function AdsPage() {
                                         >
                                             ✉ Wiadomość
                                         </button>
+
+                                        <button
+                                            className="ap-btn ap-btn--media ap-btn--sm"
+                                            onClick={() => navigate(`/ratingmenager/`)}
+                                        >
+                                            ✉ Ocena użytkownika
+                                        </button>
                                     </div>
 
                                     {/* Galeria istniejących mediów */}

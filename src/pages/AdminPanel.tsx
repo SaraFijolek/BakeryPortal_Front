@@ -98,7 +98,46 @@ interface CreateAdminRolePermissionDto {
     permissionId: number;
 }
 
-type ViewId = "dashboard" | "admins" | "sessions" | "auditlogs" | "permissions" | "rolepermissions";
+interface AdModerationDto {
+    moderationId: number;
+    adId: number;
+    adminId: string;
+    action: string;
+    reason?: string;
+    createdAt: string;
+}
+
+interface UserModerationListDto {
+    moderationId: number;
+    userId: string;
+    adminId: string;
+    action: string;
+    reason?: string;
+    durationHours?: number;
+    createdAt: string;
+    expiresAt?: string;
+    isActive: boolean;
+    userName?: string;
+    adminName?: string;
+}
+
+interface ReportedContentReadDto {
+    reportId: number;
+    reporterUserId?: string;
+    reporterEmail?: string;
+    contentType: string;
+    contentId: number;
+    reason: string;
+    description?: string;
+    status: string;
+    adminId?: string;
+    adminNotes?: string;
+    createdAt: string;
+    resolvedAt?: string;
+}
+
+type ViewId = "dashboard" | "admins" | "sessions" | "auditlogs" | "permissions" | "rolepermissions"
+    | "admoderations" | "usermoderations" | "reportedcontents";
 
 interface NavItem {
     id: ViewId;
@@ -949,6 +988,121 @@ function RolePermissionsView() {
     );
 }
 
+function AdModerationsView() {
+    const [data, setData] = useState<AdModerationDto[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const result = await apiFetch<AdModerationDto[]>("/AdModerations");
+                setData(result ?? []);
+            } catch {
+                setError("Błąd ładowania moderacji ogłoszeń.");
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
+
+    const cols: Column<AdModerationDto>[] = [
+        { key: "moderationId", label: "ID" },
+        { key: "adId", label: "ID ogłoszenia" },
+        { key: "adminId", label: "Admin ID" },
+        { key: "action", label: "Akcja", render: (v) => <span className="ap-action-badge">{String(v)}</span> },
+        { key: "reason", label: "Powód" },
+        { key: "createdAt", label: "Data", render: (v) => formatDate(v as string) },
+    ];
+
+    return (
+        <>
+            <h1 className="ap-page-title" style={{ marginBottom: "1.75rem" }}>Moderacja ogłoszeń</h1>
+            {error && <div className="ap-error-alert">{error}</div>}
+            {loading ? <div className="ap-loading">Ładowanie…</div> : (
+                <DataTable cols={cols} rows={data} keyFn={(r) => r.moderationId} />
+            )}
+        </>
+    );
+}
+
+function UserModerationsView() {
+    const [data, setData] = useState<UserModerationListDto[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const result = await apiFetch<UserModerationListDto[]>("/UserModerations/list");
+                setData(result ?? []);
+            } catch {
+                setError("Błąd ładowania moderacji użytkowników.");
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
+
+    const cols: Column<UserModerationListDto>[] = [
+        { key: "moderationId", label: "ID" },
+        { key: "userName", label: "Użytkownik" },
+        { key: "adminName", label: "Admin" },
+        { key: "action", label: "Akcja", render: (v) => <span className="ap-action-badge">{String(v)}</span> },
+        { key: "isActive", label: "Status", render: (v) => <StatusBadge active={Boolean(v)} /> },
+        { key: "expiresAt", label: "Wygasa", render: (v) => formatDate(v as string) },
+        { key: "createdAt", label: "Data", render: (v) => formatDate(v as string) },
+    ];
+
+    return (
+        <>
+            <h1 className="ap-page-title" style={{ marginBottom: "1.75rem" }}>Moderacja użytkowników</h1>
+            {error && <div className="ap-error-alert">{error}</div>}
+            {loading ? <div className="ap-loading">Ładowanie…</div> : (
+                <DataTable cols={cols} rows={data} keyFn={(r) => r.moderationId} />
+            )}
+        </>
+    );
+}
+
+function ReportedContentsView() {
+    const [data, setData] = useState<ReportedContentReadDto[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const result = await apiFetch<ReportedContentReadDto[]>("/ReportedContents");
+                setData(result ?? []);
+            } catch {
+                setError("Błąd ładowania zgłoszeń treści.");
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
+
+    const cols: Column<ReportedContentReadDto>[] = [
+        { key: "reportId", label: "ID" },
+        { key: "contentType", label: "Typ treści" },
+        { key: "contentId", label: "ID treści" },
+        { key: "reason", label: "Powód" },
+        { key: "status", label: "Status", render: (v) => <span className="ap-perm-badge">{String(v)}</span> },
+        { key: "createdAt", label: "Data", render: (v) => formatDate(v as string) },
+    ];
+
+    return (
+        <>
+            <h1 className="ap-page-title" style={{ marginBottom: "1.75rem" }}>Zgłoszone treści</h1>
+            {error && <div className="ap-error-alert">{error}</div>}
+            {loading ? <div className="ap-loading">Ładowanie…</div> : (
+                <DataTable cols={cols} rows={data} keyFn={(r) => r.reportId} />
+            )}
+        </>
+    );
+}
+
 // ─── App shell ────────────────────────────────────────────────────────────────
 
 const NAV_ITEMS: NavItem[] = [
@@ -958,6 +1112,9 @@ const NAV_ITEMS: NavItem[] = [
     { id: "auditlogs", label: "Logi audytu", icon: "◎" },
     { id: "permissions", label: "Uprawnienia", icon: "◆" },
     { id: "rolepermissions", label: "Role & Uprawnienia", icon: "◇" },
+    { id: "admoderations", label: "Moderacja ogłoszeń", icon: "▣" },
+    { id: "usermoderations", label: "Moderacja użytk.", icon: "▤" },
+    { id: "reportedcontents", label: "Zgłoszenia", icon: "▥" },
 ];
 
 export default function AdminPanel() {
@@ -1048,6 +1205,9 @@ export default function AdminPanel() {
                     {view === "auditlogs" && <AuditLogsView />}
                     {view === "permissions" && <PermissionsView />}
                     {view === "rolepermissions" && <RolePermissionsView />}
+                    {view === "admoderations" && <AdModerationsView />}
+                    {view === "usermoderations" && <UserModerationsView />}
+                    {view === "reportedcontents" && <ReportedContentsView />}
                 </main>
             </div>
         </div>

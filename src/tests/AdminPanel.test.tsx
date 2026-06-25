@@ -47,6 +47,18 @@ const mockRolePermissions = [
     { rolePermissionId: 1, role: 'admin', permissionId: 1, permissionName: 'manage_users' },
 ]
 
+const mockAdModerations = [
+    { moderationId: 1, adId: 10, adminId: 'admin-1', action: 'REMOVE', reason: 'Spam', createdAt: '2026-01-01T00:00:00Z' },
+]
+
+const mockUserModerations = [
+    { moderationId: 1, userId: 'user-1', adminId: 'admin-1', action: 'BAN', isActive: true, createdAt: '2026-01-01T00:00:00Z', userName: 'Anna Nowak', adminName: 'Jan Kowalski' },
+]
+
+const mockReportedContents = [
+    { reportId: 1, contentType: 'ad', contentId: 5, reason: 'Oszustwo', status: 'pending', createdAt: '2026-01-01T00:00:00Z' },
+]
+
 /* Helper: mockuje fetch dla wszystkich endpointów używanych w AdminPanel */
 function mockApi(overrides: Partial<Record<string, any>> = {}) {
     global.fetch = vi.fn((url: string, opts?: any) => {
@@ -73,6 +85,15 @@ function mockApi(overrides: Partial<Record<string, any>> = {}) {
         }
         if (url.includes('/AdminRolePermissions') && method === 'GET') {
             return respond(overrides.rolePermissions ?? mockRolePermissions)
+        }
+        if (url.includes('/AdModerations') && method === 'GET') {
+            return respond(overrides.adModerations ?? mockAdModerations)
+        }
+        if (url.includes('/UserModerations/list')) {
+            return respond(overrides.userModerations ?? mockUserModerations)
+        }
+        if (url.includes('/ReportedContents') && method === 'GET') {
+            return respond(overrides.reportedContents ?? mockReportedContents)
         }
         if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
             return respond(overrides.mutationResponse ?? {})
@@ -380,6 +401,47 @@ describe('AdminPanel', () => {
             fireEvent.click(screen.getByRole('button', { name: '+ Przypisz uprawnienie' }))
 
             expect(screen.getByText('Przypisz uprawnienie do roli')).toBeInTheDocument()
+        })
+    })
+
+    describe('Widok Moderacja ogłoszeń', () => {
+        it('renderuje listę moderacji ogłoszeń', async () => {
+            mockApi()
+            render(<AdminPanel />)
+            await screen.findByText('Panel główny')
+            fireEvent.click(screen.getByRole('button', { name: /Moderacja ogłoszeń/ }))
+            expect(await screen.findByText('REMOVE')).toBeInTheDocument()
+            expect(screen.getByText('Spam')).toBeInTheDocument()
+        })
+
+        it('pokazuje "Brak danych", gdy lista jest pusta', async () => {
+            mockApi({ adModerations: [] })
+            render(<AdminPanel />)
+            await screen.findByText('Panel główny')
+            fireEvent.click(screen.getByRole('button', { name: /Moderacja ogłoszeń/ }))
+            expect(await screen.findByText('Brak danych')).toBeInTheDocument()
+        })
+    })
+
+    describe('Widok Moderacja użytkowników', () => {
+        it('renderuje listę moderacji użytkowników', async () => {
+            mockApi()
+            render(<AdminPanel />)
+            await screen.findByText('Panel główny')
+            fireEvent.click(screen.getByRole('button', { name: /Moderacja użytk\./ }))
+            expect(await screen.findByText('Anna Nowak')).toBeInTheDocument()
+            expect(screen.getByText('BAN')).toBeInTheDocument()
+        })
+    })
+
+    describe('Widok Zgłoszenia', () => {
+        it('renderuje listę zgłoszonych treści', async () => {
+            mockApi()
+            render(<AdminPanel />)
+            await screen.findByText('Panel główny')
+            fireEvent.click(screen.getByRole('button', { name: /Zgłoszenia/ }))
+            expect(await screen.findByText('Oszustwo')).toBeInTheDocument()
+            expect(screen.getByText('pending')).toBeInTheDocument()
         })
     })
 })

@@ -12,6 +12,7 @@ import Message from "./pages/Message.tsx";
 import Comments from "./pages/Comments.tsx";
 import AdminPanel from "./pages/AdminPanel.tsx";
 import UserProfile from "./pages/UserProfile.tsx";
+import RatingsManager from "./pages/Ratingsmanager.tsx";
 
 function App() {
 
@@ -31,6 +32,7 @@ function App() {
           <Route path="/message" element={<Message/>}/>
           <Route path="/comments" element={<Comments/>}/>
           <Route path="/admin" element={<AdminPanel/>}/>
+          <Route path ="/ratingmenager" element={<RatingsManager/>} />
       </Routes>
 
   )
